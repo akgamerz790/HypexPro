@@ -15,7 +15,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import dev.akgamerz_790.hypix.disaster.DisasterTracker;
+import dev.akgamerz_790.hypix.debug.ScoreboardTextLogWriter;
 import dev.akgamerz_790.hypix.sidebar.SidebarRemover;
+import dev.akgamerz_790.hypix.util.HypixelServerUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
@@ -33,10 +35,15 @@ public class HypixMixin {
 
 	@Inject(method = "renderScoreboardSidebar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/scoreboard/ScoreboardObjective;)V", at = @At("HEAD"), cancellable = true)
 	private void renderDisasterOverlay(DrawContext context, ScoreboardObjective objective, CallbackInfo ci) {
-		if (!SidebarRemover.shouldRemoveSidebar()) {
+		if (!HypixelServerUtil.isHypixelServer()) {
 			return;
 		}
 		if (objective == null) {
+			return;
+		}
+
+		ScoreboardTextLogWriter.logSidebar(objective, objective.getScoreboard().getScoreboardEntries(objective));
+		if (!SidebarRemover.shouldRemoveSidebar()) {
 			return;
 		}
 
