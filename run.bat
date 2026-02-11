@@ -24,7 +24,12 @@ del /q "%DEST_DIR%\hypixelx-*.jar" 2>nul
 
 :: Copy the new jar
 echo Copying new JAR to Minecraft...
-copy /Y "%SOURCE_DIR%\hypixelx-*.jar" "%DEST_DIR%\"
+for %%F in ("%SOURCE_DIR%\hypixelx-*.jar") do (
+    echo %%~nxF | findstr /I /C:"-sources.jar" >nul
+    if errorlevel 1 (
+        copy /Y "%%~fF" "%DEST_DIR%\" >nul
+    )
+)
 
 echo.
 echo Build and Deployment Successful!
