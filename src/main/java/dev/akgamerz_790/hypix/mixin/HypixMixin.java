@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import dev.akgamerz_790.hypix.disaster.DisasterTracker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
@@ -38,7 +39,10 @@ public class HypixMixin {
 			return;
 		}
 
-		String disaster = extractDisaster(objective);
+		String disaster = DisasterTracker.getCurrentDisaster();
+		if (disaster == null) {
+			disaster = extractDisaster(objective);
+		}
 		if (disaster == null) {
 			disaster = UNKNOWN_DISASTER;
 		}
