@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "hypixelx",
+	"version": "${version}",
+	"name": "HypixelX",
+	"description": "Sigma Hypixel Server Helper.",
+	"authors": [
+		"akgamerz_790"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/akgamerz790/HypexPro"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/hypixelx/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"dev.akgamerz_790.hypix.HypixelX"
+		]
+	},
+	"mixins": [
+		"hypixelx.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.5",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
