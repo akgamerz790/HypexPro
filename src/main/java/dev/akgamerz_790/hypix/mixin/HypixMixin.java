@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import dev.akgamerz_790.hypix.debug.ScoreboardDumpWriter;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
@@ -75,13 +74,11 @@ public class HypixMixin {
 			String displayLine = entry.display() != null ? entry.display().getString() : null;
 			String found = extractDisasterFromLine(displayLine, true);
 			if (found != null) {
-				ScoreboardDumpWriter.dumpSidebarSnapshot(objective, entries, found);
 				return found;
 			}
 
 			found = extractDisasterFromLine(entry.name().getString());
 			if (found != null) {
-				ScoreboardDumpWriter.dumpSidebarSnapshot(objective, entries, found);
 				return found;
 			}
 
@@ -95,7 +92,6 @@ public class HypixMixin {
 			}
 		}
 
-		ScoreboardDumpWriter.dumpSidebarSnapshot(objective, entries, fallbackKnown != null ? fallbackKnown : UNKNOWN_DISASTER);
 		return fallbackKnown;
 	}
 
