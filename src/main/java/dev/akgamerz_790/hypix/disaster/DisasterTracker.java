@@ -1,8 +1,12 @@
 package dev.akgamerz_790.hypix.disaster;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,10 +17,8 @@ public final class DisasterTracker {
 	private static final Pattern PURGE_PATTERN = Pattern.compile("^\\s*([A-Za-z][A-Za-z ']+?)\\s+PvP is enabled.+$");
 	private static final Pattern IN_THE_PATTERN = Pattern.compile("in the ([A-Za-z ]+?)(?:[.!]|$)", Pattern.CASE_INSENSITIVE);
 	private static final Map<String, String> DISASTER_NAMES = createDisasterNames();
-	private static final long MAX_AGE_MS = 10 * 60 * 1000L;
-
-	private static volatile String currentDisaster = null;
-	private static volatile long lastUpdateMs = 0L;
+	private static final long ACTIVE_WINDOW_MS = 3 * 60 * 1000L;
+	private static final Map<String, Long> ACTIVE_DISASTERS = new LinkedHashMap<>();
 
 	private DisasterTracker() {
 	}
@@ -32,13 +34,19 @@ public final class DisasterTracker {
 		}
 
 		String line = normalize(raw);
+		String lower = line.toLowerCase(Locale.ROOT);
+
+		if (lower.startsWith("sending you to mini") || lower.contains(" game starts in ")) {
+			clear();
+		}
+
+		Set<String> detectedDisasters = new LinkedHashSet<>();
 
 		Matcher announce = ANNOUNCE_PATTERN.matcher(line);
 		if (announce.matches()) {
 			String detected = canonicalize(announce.group(1));
 			if (detected != null) {
-				update(detected);
-				return;
+				detectedDisasters.add(detected);
 			}
 		}
 
@@ -46,8 +54,7 @@ public final class DisasterTracker {
 		if (purge.matches()) {
 			String detected = canonicalize(purge.group(1));
 			if (detected != null) {
-				update(detected);
-				return;
+				detectedDisasters.add(detected);
 			}
 		}
 
@@ -55,33 +62,40 @@ public final class DisasterTracker {
 		if (inThe.find()) {
 			String detected = canonicalize(inThe.group(1));
 			if (detected != null) {
-				update(detected);
-				return;
+				detectedDisasters.add(detected);
 			}
 		}
 
 		String direct = canonicalize(line);
 		if (direct != null) {
-			update(direct);
+			detectedDisasters.add(direct);
+		}
+
+		for (String disaster : detectedDisasters) {
+			update(disaster);
 		}
 	}
 
-	public static String getCurrentDisaster() {
-		String disaster = currentDisaster;
-		if (disaster == null) {
-			return null;
-		}
+	public static List<String> getCurrentDisasters() {
+		long now = System.currentTimeMillis();
 
-		if (System.currentTimeMillis() - lastUpdateMs > MAX_AGE_MS) {
-			return null;
+		synchronized (ACTIVE_DISASTERS) {
+			ACTIVE_DISASTERS.entrySet().removeIf(entry -> now - entry.getValue() > ACTIVE_WINDOW_MS);
+			return new ArrayList<>(ACTIVE_DISASTERS.keySet());
 		}
+	}
 
-		return disaster;
+	private static void clear() {
+		synchronized (ACTIVE_DISASTERS) {
+			ACTIVE_DISASTERS.clear();
+		}
 	}
 
 	private static void update(String disaster) {
-		currentDisaster = disaster;
-		lastUpdateMs = System.currentTimeMillis();
+		long now = System.currentTimeMillis();
+		synchronized (ACTIVE_DISASTERS) {
+			ACTIVE_DISASTERS.put(disaster, now);
+		}
 	}
 
 	private static String canonicalize(String raw) {
@@ -115,9 +129,14 @@ public final class DisasterTracker {
 		names.put("tnt rain", "TNT Rain");
 		names.put("hot potato", "Hot Potato");
 		names.put("stampede", "Stampede");
+		names.put("withers", "Withers");
+		names.put("anvil rain", "Anvil Rain");
 		names.put("dragons", "Dragons");
 		names.put("purge", "Purge");
 		names.put("werewolf", "Werewolf");
+		names.put("Half Health", "Half Health");
+		names.put("Nuke", "Nuke");
+		names.put("Tornado", "Tornado");
 		return names;
 	}
 }

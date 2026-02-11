@@ -1,7 +1,9 @@
 package dev.akgamerz_790.hypix.mixin;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -39,22 +41,52 @@ public class HypixMixin {
 			return;
 		}
 
-		String disaster = DisasterTracker.getCurrentDisaster();
-		if (disaster == null) {
-			disaster = extractDisaster(objective);
+		List<String> disasters = new ArrayList<>(DisasterTracker.getCurrentDisasters());
+		if (disasters.isEmpty()) {
+			String fallback = extractDisaster(objective);
+			if (fallback != null) {
+				disasters.add(fallback);
+			}
 		}
-		if (disaster == null) {
-			disaster = UNKNOWN_DISASTER;
+		if (disasters.isEmpty()) {
+			disasters.add(UNKNOWN_DISASTER);
 		}
 
-		Text title = Text.literal("Current Disaster").formatted(Formatting.GOLD, Formatting.BOLD);
-		Text value = Text.literal(disaster).formatted(Formatting.YELLOW);
+		Text title = Text.literal(disasters.size() > 1 ? "Current Disasters" : "Current Disaster")
+			.formatted(Formatting.GOLD, Formatting.BOLD);
+		List<Text> lines = new ArrayList<>();
+		for (String disaster : disasters) {
+			lines.add(Text.literal("• " + disaster).formatted(Formatting.YELLOW));
+		}
+
+		MinecraftClient client = MinecraftClient.getInstance();
+		int lineHeight = client.textRenderer.fontHeight + 2;
+		int contentWidth = client.textRenderer.getWidth(title);
+		for (Text line : lines) {
+			contentWidth = Math.max(contentWidth, client.textRenderer.getWidth(line));
+		}
+
+		int padding = 6;
+		int boxWidth = contentWidth + (padding * 2);
+		int boxHeight = lineHeight + (lines.size() * lineHeight) + padding * 2 - 2;
 		int screenWidth = context.getScaledWindowWidth();
-		int titleX = (screenWidth - MinecraftClient.getInstance().textRenderer.getWidth(title)) / 2;
-		int valueX = (screenWidth - MinecraftClient.getInstance().textRenderer.getWidth(value)) / 2;
+		int boxX = (screenWidth - boxWidth) / 2;
+		int boxY = 8;
 
-		context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, title, titleX, 8, 0xFFFFFF);
-		context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, value, valueX, 20, 0xFFFFFF);
+		context.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0x88000000);
+		context.fill(boxX + 1, boxY + 1, boxX + boxWidth - 1, boxY + boxHeight - 1, 0x66000000);
+
+		int titleX = boxX + (boxWidth - client.textRenderer.getWidth(title)) / 2;
+		int textY = boxY + padding;
+		context.drawTextWithShadow(client.textRenderer, title, titleX, textY, 0xFFFFFF);
+
+		textY += lineHeight;
+		for (Text line : lines) {
+			int lineX = boxX + (boxWidth - client.textRenderer.getWidth(line)) / 2;
+			context.drawTextWithShadow(client.textRenderer, line, lineX, textY, 0xFFFFFF);
+			textY += lineHeight;
+		}
+
 		ci.cancel();
 	}
 
