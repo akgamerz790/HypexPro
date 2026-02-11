@@ -17,6 +17,9 @@
 	"entrypoints": {
 		"main": [
 			"dev.akgamerz_790.hypix.HypixelX"
+		],
+		"client": [
+			"dev.akgamerz_790.hypix.HypixelXClient"
 		]
 	},
 	"mixins": [
