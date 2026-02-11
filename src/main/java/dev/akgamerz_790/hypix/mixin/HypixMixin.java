@@ -55,7 +55,7 @@ public class HypixMixin {
 			.formatted(Formatting.GOLD, Formatting.BOLD);
 		List<Text> lines = new ArrayList<>();
 		for (String disaster : disasters) {
-			lines.add(Text.literal("- " + disaster).formatted(Formatting.YELLOW));
+			lines.add(Text.literal("• " + disaster).formatted(Formatting.YELLOW));
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
