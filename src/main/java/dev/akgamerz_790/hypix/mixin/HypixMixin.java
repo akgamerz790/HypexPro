@@ -15,10 +15,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import dev.akgamerz_790.hypix.disaster.DisasterTracker;
+import dev.akgamerz_790.hypix.util.HypixelServerUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
-import net.minecraft.client.network.ServerInfo;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardEntry;
 import net.minecraft.scoreboard.ScoreboardObjective;
@@ -27,14 +27,13 @@ import net.minecraft.util.Formatting;
 
 @Mixin(InGameHud.class)
 public class HypixMixin {
-	private static final String DISASTER_PREFIX = "disaster:";
 	private static final String UNKNOWN_DISASTER = "Unknown";
 	private static final Pattern DISASTER_PATTERN = Pattern.compile("disaster\\s*[:\\-]?\\s*(.+)", Pattern.CASE_INSENSITIVE);
 	private static final Map<String, String> KNOWN_DISASTERS = createKnownDisasters();
 
 	@Inject(method = "renderScoreboardSidebar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/scoreboard/ScoreboardObjective;)V", at = @At("HEAD"), cancellable = true)
 	private void renderDisasterOverlay(DrawContext context, ScoreboardObjective objective, CallbackInfo ci) {
-		if (!isHypixelServer()) {
+		if (!HypixelServerUtil.isHypixelServer()) {
 			return;
 		}
 		if (objective == null) {
@@ -56,7 +55,7 @@ public class HypixMixin {
 			.formatted(Formatting.GOLD, Formatting.BOLD);
 		List<Text> lines = new ArrayList<>();
 		for (String disaster : disasters) {
-			lines.add(Text.literal("• " + disaster).formatted(Formatting.YELLOW));
+			lines.add(Text.literal("- " + disaster).formatted(Formatting.YELLOW));
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
@@ -89,17 +88,6 @@ public class HypixMixin {
 		ci.cancel();
 	}
 
-	private boolean isHypixelServer() {
-		MinecraftClient client = MinecraftClient.getInstance();
-		ServerInfo entry = client.getCurrentServerEntry();
-		if (entry == null || entry.address == null) {
-			return false;
-		}
-
-		String address = entry.address.toLowerCase(Locale.ROOT);
-		return address.contains("hypixel.net") || address.contains("hyixel.net");
-	}
-
 	private String extractDisaster(ScoreboardObjective objective) {
 		Scoreboard scoreboard = objective.getScoreboard();
 		Collection<ScoreboardEntry> entries = scoreboard.getScoreboardEntries(objective);
@@ -112,7 +100,7 @@ public class HypixMixin {
 				return found;
 			}
 
-			found = extractDisasterFromLine(entry.name().getString());
+			found = extractDisasterFromLine(entry.name().getString(), true);
 			if (found != null) {
 				return found;
 			}
@@ -128,10 +116,6 @@ public class HypixMixin {
 		}
 
 		return fallbackKnown;
-	}
-
-	private String extractDisasterFromLine(String line) {
-		return extractDisasterFromLine(line, true);
 	}
 
 	private String extractDisasterFromLine(String line, boolean requireDisasterKeyword) {
@@ -156,18 +140,15 @@ public class HypixMixin {
 		if (requireDisasterKeyword && !normalized.contains("disaster")) {
 			return null;
 		}
-
 		if (normalized.contains("next disaster")) {
 			return null;
 		}
 
-		String known = findKnownDisaster(normalized);
-		return known;
+		return findKnownDisaster(normalized);
 	}
 
 	private String canonicalizeDisaster(String rawDisaster) {
-		String lower = normalize(rawDisaster);
-		String known = findKnownDisaster(lower);
+		String known = findKnownDisaster(normalize(rawDisaster));
 		return known != null ? known : rawDisaster;
 	}
 
@@ -177,13 +158,11 @@ public class HypixMixin {
 				return entry.getValue();
 			}
 		}
-
 		return null;
 	}
 
 	private String normalize(String text) {
-		String lower = text.toLowerCase(Locale.ROOT);
-		return lower.replaceAll("[^a-z0-9: -]", " ").replaceAll("\\s+", " ").trim();
+		return text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9: -]", " ").replaceAll("\\s+", " ").trim();
 	}
 
 	private static Map<String, String> createKnownDisasters() {
@@ -193,6 +172,8 @@ public class HypixMixin {
 		disasters.put("werewolf", "Werewolf");
 		disasters.put("the floor is lava", "The Floor Is Lava");
 		disasters.put("floor is lava", "The Floor Is Lava");
+		disasters.put("withers", "Withers");
+		disasters.put("anvil rain", "Anvil Rain");
 		return disasters;
 	}
 }

@@ -1,8 +1,8 @@
 package dev.akgamerz_790.hypix.disaster;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,50 +35,67 @@ public final class DisasterTracker {
 
 		String line = normalize(raw);
 		String lower = line.toLowerCase(Locale.ROOT);
-
 		if (lower.startsWith("sending you to mini") || lower.contains(" game starts in ")) {
 			clear();
 		}
 
-		Set<String> detectedDisasters = new LinkedHashSet<>();
+		Set<String> detected = new LinkedHashSet<>();
 
 		Matcher announce = ANNOUNCE_PATTERN.matcher(line);
 		if (announce.matches()) {
-			String detected = canonicalize(announce.group(1));
-			if (detected != null) {
-				detectedDisasters.add(detected);
+			String name = canonicalize(announce.group(1));
+			if (name != null) {
+				detected.add(name);
 			}
 		}
 
 		Matcher purge = PURGE_PATTERN.matcher(line);
 		if (purge.matches()) {
-			String detected = canonicalize(purge.group(1));
-			if (detected != null) {
-				detectedDisasters.add(detected);
+			String name = canonicalize(purge.group(1));
+			if (name != null) {
+				detected.add(name);
 			}
 		}
 
 		Matcher inThe = IN_THE_PATTERN.matcher(line);
 		if (inThe.find()) {
-			String detected = canonicalize(inThe.group(1));
-			if (detected != null) {
-				detectedDisasters.add(detected);
+			String name = canonicalize(inThe.group(1));
+			if (name != null) {
+				detected.add(name);
 			}
 		}
 
 		String direct = canonicalize(line);
 		if (direct != null) {
-			detectedDisasters.add(direct);
+			detected.add(direct);
 		}
 
-		for (String disaster : detectedDisasters) {
+		for (String disaster : detected) {
 			update(disaster);
 		}
 	}
 
+	public static boolean shouldHideChatMessage(Text message) {
+		if (message == null) {
+			return false;
+		}
+
+		String raw = message.getString();
+		if (raw == null || raw.isBlank()) {
+			return false;
+		}
+
+		if (isSeparatorLine(raw)) {
+			return true;
+		}
+
+		String line = normalize(raw);
+		Matcher announce = ANNOUNCE_PATTERN.matcher(line);
+		return announce.matches() && canonicalize(announce.group(1)) != null;
+	}
+
 	public static List<String> getCurrentDisasters() {
 		long now = System.currentTimeMillis();
-
 		synchronized (ACTIVE_DISASTERS) {
 			ACTIVE_DISASTERS.entrySet().removeIf(entry -> now - entry.getValue() > ACTIVE_WINDOW_MS);
 			return new ArrayList<>(ACTIVE_DISASTERS.keySet());
@@ -92,10 +109,17 @@ public final class DisasterTracker {
 	}
 
 	private static void update(String disaster) {
-		long now = System.currentTimeMillis();
 		synchronized (ACTIVE_DISASTERS) {
-			ACTIVE_DISASTERS.put(disaster, now);
+			ACTIVE_DISASTERS.put(disaster, System.currentTimeMillis());
 		}
+	}
+
+	private static boolean isSeparatorLine(String raw) {
+		String cleaned = stripFormatting(raw).trim();
+		if (cleaned.length() < 20) {
+			return false;
+		}
+		return cleaned.matches("^[\\-_=~#*\\p{So}\\s]+$");
 	}
 
 	private static String canonicalize(String raw) {
@@ -113,11 +137,16 @@ public final class DisasterTracker {
 	}
 
 	private static String normalize(String text) {
-		return text
-			.replaceAll("§.", "")
+		return stripFormatting(text)
 			.replaceAll("[^A-Za-z0-9 :\\-!]", " ")
 			.replaceAll("\\s+", " ")
 			.trim();
+	}
+
+	private static String stripFormatting(String text) {
+		return text
+			.replaceAll("\u00A7.", "")
+			.replaceAll("Â§.", "");
 	}
 
 	private static Map<String, String> createDisasterNames() {
@@ -134,9 +163,11 @@ public final class DisasterTracker {
 		names.put("dragons", "Dragons");
 		names.put("purge", "Purge");
 		names.put("werewolf", "Werewolf");
-		names.put("Half Health", "Half Health");
-		names.put("Nuke", "Nuke");
-		names.put("Tornado", "Tornado");
+		names.put("half health", "Half Health");
+		names.put("nuke", "Nuke");
+		names.put("tornado", "Tornado");
+		names.put("blackout", "Blackout");
+		names.put("acid rain", "Acid Rain");
 		return names;
 	}
 }
