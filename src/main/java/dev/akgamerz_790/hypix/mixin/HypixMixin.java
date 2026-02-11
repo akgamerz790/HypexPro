@@ -73,8 +73,7 @@ public class HypixMixin {
 		int boxX = (screenWidth - boxWidth) / 2;
 		int boxY = 8;
 
-		context.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0x88000000);
-		context.fill(boxX + 1, boxY + 1, boxX + boxWidth - 1, boxY + boxHeight - 1, 0x66000000);
+		context.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xAA000000);
 
 		int titleX = boxX + (boxWidth - client.textRenderer.getWidth(title)) / 2;
 		int textY = boxY + padding;
